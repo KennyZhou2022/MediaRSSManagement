@@ -1,0 +1,11 @@
+version: "3"
+
+services:
+  rss-backend:
+    build: .
+    container_name: rss-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app
+    restart: unless-stopped
