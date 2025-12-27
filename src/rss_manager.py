@@ -111,18 +111,29 @@ class RSSManager:
 
             self.log(rss_id, f"{number_of_new} new torrents found")
 
-            try:
-                c = Client(host=settings.get("transmission_url", "localhost"),
-                        port=settings.get("transmission_port", 9091),
-                        username=settings.get("username", ""),
-                        password=settings.get("password", ""))
-            except Exception:
-                self.log(rss_id, f"Failed to connect to Transmission with the configured settings: {settings.get("transmission_url")}, {settings.get("transmission_port", 9091)}, {settings.get("username", "")}, {settings.get('password', '')}")
-                raise
+            # If Transmission settings are not configured, skip sending torrents
+            tx_url = settings.get("transmission_url")
+            tx_port = settings.get("transmission_port", 9091)
+            if not tx_url:
+                self.log(rss_id, f"Transmission not configured, skipping sending {number_of_new} torrents")
+            else:
+                try:
+                    c = Client(host=tx_url,
+                               port=tx_port,
+                               username=settings.get("username", ""),
+                               password=settings.get("password", ""))
+                except Exception as e:
+                    # Log the connection failure but do not crash the whole application
+                    self.log(rss_id, f"Failed to connect to Transmission: {tx_url}:{tx_port} ({e})")
+                    c = None
 
-            for torrent_url in torrents_links:
-                c.add_torrent(torrent_url, download_dir=item.path)
-                self.log(rss_id, f"Sent job to {item.path}: {torrent_url}")
+                if c:
+                    for torrent_url in torrents_links:
+                        try:
+                            c.add_torrent(torrent_url, download_dir=item.path)
+                            self.log(rss_id, f"Sent job to {item.path}: {torrent_url}")
+                        except Exception as e:
+                            self.log(rss_id, f"Failed to send torrent {torrent_url}: {e}")
 
             # update last_title
             item.last_title = new_title
@@ -135,8 +146,8 @@ class RSSManager:
     # Scheduled polling
     # ---------------------
     def schedule(self, rss_id: str):
-        if self.storage.get("transmission_url") is not None:
-            self.check_rss(rss_id)
+        # Always run checks; check_rss will skip Transmission actions if not configured
+        self.check_rss(rss_id)
         interval = self.storage["rss"][rss_id]["interval"]
         self.tasks[rss_id] = threading.Timer(interval * 60, self.schedule, args=[rss_id])
         self.tasks[rss_id].start()
