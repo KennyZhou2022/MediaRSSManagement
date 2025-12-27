@@ -1,11 +1,15 @@
-version: "3"
-
 services:
   media-management:
-    build: .
     container_name: media-management
+    environment:
+      - TZ=Asia/Shanghai
+    build: .
+    image: media-management:local
     ports:
-      - "8000:8000"
+      - '38000:8000'
+    restart: unless-stopped
     volumes:
       - ./storage:/app/storage
-    restart: unless-stopped
+    # Run as root in compose to avoid permission issues on mounted host volume
+    user: "0:0"
+version: '3.9'

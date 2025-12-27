@@ -17,11 +17,7 @@ COPY app.py /
 COPY src /src
 
 # Ensure storage and log directories exist and are writable
-RUN mkdir -p /storage/logs \
-	&& useradd -ms /bin/bash appuser \
-	&& chown -R appuser:appuser /storage /src
-
-USER appuser
+RUN mkdir -p /storage/logs
 
 EXPOSE 8000
 
