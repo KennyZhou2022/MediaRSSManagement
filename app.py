@@ -14,6 +14,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 from src.rss_manager import RSSManager
 from src.api.routes import router, set_rss_manager
+from src.api.constants import router as constants_router
 
 app = FastAPI()
 rss = RSSManager()
@@ -103,6 +104,7 @@ app.add_middleware(
 
 # Include API routes
 app.include_router(router, prefix="/api", tags=["api"])
+app.include_router(constants_router, prefix="/api", tags=["constants"])
 
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):

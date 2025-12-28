@@ -12,13 +12,9 @@ import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.general_class import RSSItem
+from src.general.general_class import RSSItem
 from src.rss_manager import RSSManager
-
-
-STORAGE_DIR = "storage"
-STORAGE_PATH = os.path.join(STORAGE_DIR, "storage.json")
-LOG_DIR = os.path.join(STORAGE_DIR, "logs")
+from src.general.general_constant import STORAGE_DIR, STORAGE_PATH, LOG_DIR
 
 def test_rss_fetch(rss_id: str):
     # RSS_test = RSSManager()

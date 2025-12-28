@@ -3,13 +3,9 @@ import threading
 import json
 import os
 from datetime import datetime
-from src.general_class import RSSItem
+from src.general.general_class import RSSItem
 from transmission_rpc import Client
-
-
-STORAGE_DIR = "storage"
-STORAGE_PATH = os.path.join(STORAGE_DIR, "storage.json")
-LOG_DIR = os.path.join(STORAGE_DIR, "logs")
+from src.general.general_constant import STORAGE_DIR, STORAGE_PATH, LOG_DIR, DEFAULT_TRANSMISSION_PORT
 
 
 class RSSManager:
@@ -113,7 +109,7 @@ class RSSManager:
 
             # If Transmission settings are not configured, skip sending torrents
             tx_url = settings.get("transmission_url")
-            tx_port = settings.get("transmission_port", 9091)
+            tx_port = settings.get("transmission_port", DEFAULT_TRANSMISSION_PORT)
             if not tx_url:
                 self.log(rss_id, f"Transmission not configured, skipping sending {number_of_new} torrents")
             else:

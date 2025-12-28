@@ -9,6 +9,8 @@ class RSSItem(BaseModel):
     interval: int  # minutes
     last_fetch: Optional[str] = None
     last_title: Optional[str] = None
+    pt_site: str
+    key_words: Optional[str] = None
 
 
 class Settings(BaseModel):

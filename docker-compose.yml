@@ -3,13 +3,11 @@ services:
     container_name: media-management
     environment:
       - TZ=Asia/Shanghai
-    build: .
-    image: media-management:local
+    image: kenny2023/media-management:latest
+    pull_policy: always
     ports:
       - '38000:8000'
     restart: unless-stopped
     volumes:
-      - ./storage:/app/storage
-    # Run as root in compose to avoid permission issues on mounted host volume
-    user: "0:0"
+      - /mnt/Pool_SH/Application/media-management/storage:/app/storage
 version: '3.9'

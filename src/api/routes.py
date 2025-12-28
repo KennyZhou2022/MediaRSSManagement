@@ -3,7 +3,8 @@ API routes
 """
 from fastapi import APIRouter, HTTPException, Depends
 import uuid
-from src.general_class import RSSItem, Settings
+from src.general.general_class import RSSItem, Settings
+from src.general.general_constant import DEFAULT_TRANSMISSION_URL, DEFAULT_TRANSMISSION_PORT, DEFAULT_RSS_INTERVAL
 from src.rss_manager import RSSManager
 
 router = APIRouter()
@@ -80,11 +81,11 @@ def get_settings(rss: RSSManager = Depends(get_rss_manager)):
     settings = rss.storage.get("settings", {})
     # 返回默认值如果设置不存在
     default_settings = {
-        "transmission_url": "localhost",
-        "transmission_port": 9091,
+        "transmission_url": DEFAULT_TRANSMISSION_URL,
+        "transmission_port": DEFAULT_TRANSMISSION_PORT,
         "username": "",
         "password": "",
-        "default_rss_interval": 10
+        "default_rss_interval": DEFAULT_RSS_INTERVAL
     }
     return {**default_settings, **settings}
 
@@ -122,7 +123,7 @@ def add_feed(feed_data: dict, rss: RSSManager = Depends(get_rss_manager)):
     
     # 如果没有指定interval，使用默认值
     settings = rss.storage.get("settings", {})
-    default_interval = settings.get("default_rss_interval", 10)
+    default_interval = settings.get("default_rss_interval", DEFAULT_RSS_INTERVAL)
     
     feed_id = str(uuid.uuid4())
     rss_item = RSSItem(

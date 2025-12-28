@@ -9,9 +9,7 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.rss_manager import RSSManager
-
-STORAGE_PATH = os.path.join("storage", "storage.json")
-LOG_DIR = os.path.join("storage", "logs")
+from src.general.general_constant import STORAGE_PATH, LOG_DIR
 
 
 def pretty_print_storage_entry(e):
