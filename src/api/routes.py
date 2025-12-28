@@ -4,7 +4,7 @@ API routes
 from fastapi import APIRouter, HTTPException, Depends
 import uuid
 from src.general.general_class import RSSItem, Settings
-from src.general.general_constant import DEFAULT_TRANSMISSION_URL, DEFAULT_TRANSMISSION_PORT, DEFAULT_RSS_INTERVAL
+from src.general.general_constant import DEFAULT_TRANSMISSION_URL, DEFAULT_TRANSMISSION_PORT, DEFAULT_RSS_INTERVAL, DEFAULT_PT_SITE
 from src.rss_manager import RSSManager
 
 router = APIRouter()
@@ -32,6 +32,8 @@ def _convert_rss_to_feed(rss_id: str, rss_data: dict) -> dict:
         "id": rss_id,
         "name": rss_data.get("name", ""),
         "url": rss_data.get("url", ""),
+        "pt_site": rss_data.get("pt_site", DEFAULT_PT_SITE),
+        "key_words": rss_data.get("key_words", ""),
         "path": rss_data.get("path", ""),
         "interval": rss_data.get("interval", 10),
         "enabled": True,  # Default to enabled
@@ -85,7 +87,8 @@ def get_settings(rss: RSSManager = Depends(get_rss_manager)):
         "transmission_port": DEFAULT_TRANSMISSION_PORT,
         "username": "",
         "password": "",
-        "default_rss_interval": DEFAULT_RSS_INTERVAL
+        "default_rss_interval": DEFAULT_RSS_INTERVAL,
+        "default_download_path": ""
     }
     return {**default_settings, **settings}
 
@@ -130,12 +133,18 @@ def add_feed(feed_data: dict, rss: RSSManager = Depends(get_rss_manager)):
         id=feed_id,
         name=feed_data.get("name", ""),
         url=feed_url,
-        path=feed_data.get("path", ""),
+        pt_site=feed_data.get("pt_site", DEFAULT_PT_SITE),
+            path=feed_data.get("path", ""),
+            key_words=feed_data.get("key_words", ""),
         interval=feed_data.get("interval", default_interval)
     )
     
     try:
         rss.add_rss(rss_item)
+        # If requested, set this feed's path as the new default download path
+        if feed_data.get("set_default_download") and rss_item.path:
+            rss.storage.setdefault("settings", {})["default_download_path"] = rss_item.path
+            rss.save_storage()
     except Exception as e:
         # 如果添加失败，确保不会留下部分数据
         if feed_id in rss.storage["rss"]:
@@ -155,6 +164,8 @@ def update_feed(feed_id: str, feed_data: dict, rss: RSSManager = Depends(get_rss
         id=feed_id,
         name=feed_data.get("name", existing.get("name", "")),
         url=feed_data.get("url", existing.get("url", "")),
+        pt_site=feed_data.get("pt_site", existing.get("pt_site", DEFAULT_PT_SITE)),
+        key_words=feed_data.get("key_words", existing.get("key_words", "")),
         path=feed_data.get("path", existing.get("path", "")),
         interval=feed_data.get("interval", existing.get("interval", 10)),
         last_fetch=existing.get("last_fetch"),

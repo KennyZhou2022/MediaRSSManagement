@@ -14,12 +14,27 @@ DEFAULT_RSS_INTERVAL = 10
 
 # PT site names
 HHCLUB = 'HHCLUB'
+AUDIENCES = 'Audiences'
 
 # Default PT site
 DEFAULT_PT_SITE = HHCLUB
 
 # Supported PT sites
-SUPPORTED_PT_SITES = [HHCLUB]
+SUPPORTED_PT_SITES = [HHCLUB, AUDIENCES]
+
+# PT site type definitions
+PT_SITE_TYPES = {
+    'HHCLUB': 'direct',        # fetch RSS and download directly
+    'Audiences': 'filter'      # fetch RSS, then filter by keywords before downloading
+}
+
+# Date and time format used in RSS feeds
+DATETIME_FORMAT = "%Y-%m-%d %A %H:%M:%S"
+TIME_ZONE = "Asia/Shanghai"
+
+###########################
+### Frontend constants ### 
+###########################
 
 # Frontend / shared defaults
 AUTO_REFRESH_MS = 15000
@@ -75,5 +90,6 @@ STRINGS = {
 
 # Lists used by frontend
 LISTS = {
-	'PT_SITES': SUPPORTED_PT_SITES
+	'PT_SITES': SUPPORTED_PT_SITES,
+    'PT_SITE_TYPES': PT_SITE_TYPES
 }

@@ -8,6 +8,9 @@ import os
 import sys
 import json
 from datetime import datetime
+from zoneinfo import ZoneInfo
+
+from src.general.general_constant import DATETIME_FORMAT, TIME_ZONE
 
 # Add the src directory to the Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
@@ -25,7 +28,17 @@ set_rss_manager(rss)
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         log_path = r"c:\Users\Kenny\Documents\GitHub\MediaManagement\.cursor\debug.log"
+        # helper to produce epoch ms and formatted ts
+        def _log_times():
+            try:
+                tz = ZoneInfo(TIME_ZONE)
+                now = datetime.now(tz)
+                return int(now.timestamp() * 1000), now.strftime(DATETIME_FORMAT)
+            except Exception:
+                now = datetime.now()
+                return int(now.timestamp() * 1000), now.isoformat()
         try:
+            ts_ms, ts_str = _log_times()
             log_entry = {
                 "sessionId": "debug-session",
                 "runId": "run3",
@@ -37,7 +50,8 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                     "path": str(request.url.path),
                     "query": str(request.url.query)
                 },
-                "timestamp": int(datetime.now().timestamp() * 1000)
+                "timestamp": ts_ms,
+                "ts": ts_str
             }
             with open(log_path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(log_entry) + "\n")
@@ -47,6 +61,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         #endregion agent log
         #region agent log
         try:
+            ts_ms, ts_str = _log_times()
             log_entry = {
                 "sessionId": "debug-session",
                 "runId": "run3",
@@ -59,7 +74,8 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                     "status_code": response.status_code,
                     "content_type": response.headers.get("content-type", "")
                 },
-                "timestamp": int(datetime.now().timestamp() * 1000)
+                "timestamp": ts_ms,
+                "ts": ts_str
             }
             with open(log_path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(log_entry) + "\n")
@@ -74,6 +90,17 @@ static_dir = os.path.join("src", "static")
 #region agent log
 log_path = r"c:\Users\Kenny\Documents\GitHub\MediaManagement\.cursor\debug.log"
 try:
+    def _log_times():
+        try:
+            tz = ZoneInfo(TIME_ZONE)
+            now = datetime.now(tz)
+            return int(now.timestamp() * 1000), now.strftime(DATETIME_FORMAT)
+        except Exception:
+            now = datetime.now()
+            return int(now.timestamp() * 1000), now.isoformat()
+
+    ts_ms, ts_str = _log_times()
+
     log_entry = {
         "sessionId": "debug-session",
         "runId": "run3",
@@ -85,7 +112,8 @@ try:
             "exists": os.path.exists(static_dir),
             "index_html_exists": os.path.exists(os.path.join(static_dir, "index.html"))
         },
-        "timestamp": int(datetime.now().timestamp() * 1000)
+        "timestamp": ts_ms,
+        "ts": ts_str
     }
     with open(log_path, "a", encoding="utf-8") as f:
         f.write(json.dumps(log_entry) + "\n")
@@ -125,6 +153,7 @@ def root():
     # #region agent log
     log_path = r"c:\Users\Kenny\Documents\GitHub\MediaManagement\.cursor\debug.log"
     try:
+        ts_ms, ts_str = _log_times()
         log_entry = {
             "sessionId": "debug-session",
             "runId": "run3",
@@ -136,7 +165,8 @@ def root():
                 "index_path": os.path.join(static_dir, "index.html"),
                 "index_exists": os.path.exists(os.path.join(static_dir, "index.html"))
             },
-            "timestamp": int(datetime.now().timestamp() * 1000)
+            "timestamp": ts_ms,
+            "ts": ts_str
         }
         with open(log_path, "a", encoding="utf-8") as f:
             f.write(json.dumps(log_entry) + "\n")

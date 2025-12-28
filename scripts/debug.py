@@ -31,6 +31,29 @@ def test_rss_fetch(rss_id: str):
         c.add_torrent(torrent_url)
     print("ok")
 
+def save_torrent_list(rss_id: str):
+
+    RSS_test = RSSManager()
+    RSS_test.load_storage()
+
+    item = RSSItem(**RSS_test.storage["rss"][rss_id])
+    feed = feedparser.parse(item.url)
+    print(feed)
+
+    torrent_dict = load_torrent_list()
+
+    for entry in feed.entries:
+        torrent_dict[entry.title] = entry.links[1]['href']
+    with open(os.path.join(STORAGE_DIR, f"{rss_id}_torrents_list.json"), "w", encoding="utf-8") as f:
+        json.dump(torrent_dict, f, indent=4, ensure_ascii=False)
+
+    def load_torrent_list():
+        torrent_list_path = os.path.join(STORAGE_DIR, f"{rss_id}_torrents_list.json")
+        if not os.path.exists(torrent_list_path):
+            return {}
+        with open(torrent_list_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+
 if __name__ == "__main__":
     rss_id = 'bc3fad55-ca12-4942-a9ad-43e052b76bde'
-    test_rss_fetch(rss_id)
+    save_torrent_list(rss_id)

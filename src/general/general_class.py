@@ -18,6 +18,7 @@ class Settings(BaseModel):
     transmission_port: int = 9091
     username: str = ""
     password: str = ""
+    default_download_path: str = ""
     default_rss_interval: int = 10  # default interval is 10 minutes
     
     @field_validator('default_rss_interval')

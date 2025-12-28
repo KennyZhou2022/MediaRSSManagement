@@ -22,7 +22,7 @@
             const [showForm, setShowForm] = useState(false);
             const [showSettings, setShowSettings] = useState(false);
             const [editing, setEditing] = useState(null);
-            const [form, setForm] = useState({ name: '', url: '', path: '', interval: GC.DEFAULTS.DEFAULT_RSS_INTERVAL || 10, enabled: true });
+            const [form, setForm] = useState({ name: '', url: '', pt_site: (GC.LISTS?.PT_SITES?.[0]) || '', key_words: '', path: '', set_default_download: false, interval: GC.DEFAULTS.DEFAULT_RSS_INTERVAL || 10, enabled: true });
             const [settings, setSettings] = useState({ 
                 transmission_url: GC.DEFAULTS.TRANSMISSION_URL || '', 
                 transmission_port: GC.DEFAULTS.TRANSMISSION_PORT || 9091,
@@ -124,10 +124,12 @@
 
             function openNew(){ 
                 setEditing(null); 
-                setForm({name:'',url:'',path:'',interval:settings.default_rss_interval || 10,enabled:true}); 
+                // default checkbox: checked if no default_download_path exists
+                const shouldCheck = !settings.default_download_path || settings.default_download_path === '';
+                setForm({name:'',url:'',pt_site:(GC.LISTS?.PT_SITES?.[0]) || '', key_words:'', path:'', set_default_download: shouldCheck, interval:settings.default_rss_interval || 10,enabled:true}); 
                 setShowForm(true); 
             }
-            function openEdit(f){ setEditing(f); setForm({name:f.name,url:f.url,path:f.path||'',interval:f.interval,enabled:!!f.enabled}); setShowForm(true); }
+            function openEdit(f){ setEditing(f); const shouldCheck = !settings.default_download_path || settings.default_download_path === ''; setForm({name:f.name,url:f.url,pt_site:f.pt_site || ((GC.LISTS?.PT_SITES?.[0]) || ''), key_words: f.key_words || '', path:f.path||'', set_default_download: shouldCheck, interval:f.interval,enabled:!!f.enabled}); setShowForm(true); }
 
             async function submitForm(e){
                 e.preventDefault();
@@ -220,10 +222,20 @@
                                 <h3 className="text-lg font-semibold mb-4">{editing? GC.STRINGS.BTN_EDIT : GC.STRINGS.ADD_FEED}</h3>
                                 <label className="block text-sm mb-1">{GC.STRINGS.NAME_LABEL}</label>
                                 <input required className="w-full border rounded px-2 py-1 mb-3" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} />
+                                <label className="block text-sm mb-1">PT Site</label>
+                                <select className="w-full border rounded px-2 py-1 mb-3" value={form.pt_site} onChange={e=>setForm({...form, pt_site: e.target.value})}>
+                                    {(GC.LISTS?.PT_SITES || []).map((s,idx)=> (<option key={idx} value={s}>{s}</option>))}
+                                </select>
                                 <label className="block text-sm mb-1">{GC.STRINGS.RSS_URL_LABEL}</label>
                                 <input required className="w-full border rounded px-2 py-1 mb-3" value={form.url} onChange={e=>setForm({...form, url:e.target.value})} />
+                                <label className="block text-sm mb-1">Keywords</label>
+                                <input className="w-full border rounded px-2 py-1 mb-3" value={form.key_words} onChange={e=>setForm({...form, key_words: e.target.value})} placeholder="keywords, separated by spaces (optional)" />
                                 <label className="block text-sm mb-1">{GC.STRINGS.PATH_LABEL}</label>
-                                <input className="w-full border rounded px-2 py-1 mb-3" value={form.path} onChange={e=>setForm({...form, path: e.target.value})} placeholder={GC.STRINGS.PLACEHOLDER_PATH} />
+                                <input className="w-full border rounded px-2 py-1 mb-1" value={form.path} onChange={e=>setForm({...form, path: e.target.value})} placeholder={GC.STRINGS.PLACEHOLDER_PATH} />
+                                {settings.default_download_path && settings.default_download_path !== '' && (
+                                    <div className="text-xs text-slate-500 mb-2">默认下载路径: {settings.default_download_path}</div>
+                                )}
+                                <label className="inline-flex items-center gap-2 mb-3"><input type="checkbox" checked={form.set_default_download} onChange={e=>setForm({...form, set_default_download: e.target.checked})} /> 将此路径设为默认下载路径</label>
                                 <label className="block text-sm mb-1">{GC.STRINGS.INTERVAL_LABEL}</label>
                                 <input type="number" min={1} className="w-full border rounded px-2 py-1 mb-3" value={form.interval} onChange={e=>setForm({...form, interval: Number(e.target.value)})} />
                                 <label className="inline-flex items-center gap-2 mb-3"><input type="checkbox" checked={form.enabled} onChange={e=>setForm({...form, enabled: e.target.checked})} /> {GC.STRINGS.ENABLED_LABEL}</label>
