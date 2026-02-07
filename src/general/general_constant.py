@@ -51,12 +51,10 @@ STRINGS = {
 	'AUTO_REFRESH_MSG': 'Auto-refresh every 15s',
 	'LOADING': 'Loading...',
 	'NO_FEEDS': 'No feeds added yet.',
-	'RECENT_ACTIVITY_HEADER': 'Recent Activity',
 	'NAME_LABEL': 'Name',
 	'RSS_URL_LABEL': 'RSS URL',
 	'PATH_LABEL': 'Download Path',
 	'INTERVAL_LABEL': 'Interval (minutes)',
-	'ENABLED_LABEL': 'Enabled',
 	'SAVE_BUTTON': 'Save',
 	'CANCEL_BUTTON': 'Cancel',
 	'TRANSMISSION_RPC_LABEL': 'Transmission RPC URL',
@@ -85,9 +83,7 @@ STRINGS = {
 	'CONFIRM_DELETE': 'Delete this feed?',
 	'CHECK_DONE': 'Check done, new items',
 	'CHECK_FAILED': 'Check failed',
-	'LOAD_LOGS_FAILED': 'Load logs failed',
-	'SENT_TO_TRANSMISSION': 'Sent to Transmission',
-	'SEND_FAILED': 'Send failed'
+	'LOAD_LOGS_FAILED': 'Load logs failed'
 }
 
 # Lists used by frontend
