@@ -15,19 +15,21 @@ DEFAULT_RSS_INTERVAL = 10
 # PT site names
 HHCLUB = 'HHCLUB'
 AUDIENCES = 'Audiences'
+CHDBits = 'CHDBits'
 
 # Default PT site
 DEFAULT_PT_SITE = HHCLUB
 
 # Supported PT sites
-SUPPORTED_PT_SITES = [HHCLUB, AUDIENCES]
+SUPPORTED_PT_SITES = [HHCLUB, AUDIENCES, CHDBits]
 
 # PT site type definitions
 DIRECT = 'direct'
 FILTER = 'filter'
 PT_SITE_TYPES = {
     HHCLUB: DIRECT,        # fetch RSS and download directly
-    AUDIENCES: FILTER      # fetch RSS, then filter by keywords before downloading
+    AUDIENCES: FILTER,     # fetch RSS, then filter by keywords before downloading
+    CHDBits: DIRECT        # fetch RSS and download directly
 }
 
 # Date and time format used in RSS feeds
