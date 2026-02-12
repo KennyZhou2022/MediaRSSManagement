@@ -81,17 +81,19 @@ class RSSManager:
                     return json.load(f)
 
             torrent_dict = load_torrent_list()
+            new_torrent_dict = {}
 
             number_of_new = 0
             for entry in feed.entries:
                 if entry.title not in torrent_dict:
                     torrent_dict[entry.title] = entry.links[1]['href']
+                    new_torrent_dict[entry.title] = entry.links[1]['href']
                     number_of_new += 1
             with open(os.path.join(GC.STORAGE_DIR, f"{rss_id}_torrents_list.json"), "w", encoding="utf-8") as f:
                 json.dump(torrent_dict, f, indent=4, ensure_ascii=False)
             self.log(rss_id, f"Saved {number_of_new} torrent links to {rss_id}_torrents_list.json")
 
-            return torrent_dict
+            return new_torrent_dict
 
 
         def parse_rss():
@@ -186,8 +188,8 @@ class RSSManager:
             return
 
         if GC.PT_SITE_TYPES[item.pt_site] in [GC.FILTER]:
-            torrent_dict = save_torrent_list()
-            torrent_links = search_by_keywords(torrent_dict)
+            new_torrent_dict = save_torrent_list()
+            torrent_links = search_by_keywords(new_torrent_dict)
         else:
             torrent_links = parse_rss()
 
