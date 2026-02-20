@@ -5,8 +5,13 @@ import os
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from src.general.general_class import RSSItem
-from transmission_rpc import Client
 import src.general.general_constant as GC
+
+try:
+    from transmission_rpc import Client
+except ImportError:
+    # Keep app startup working even if transmission-rpc is missing
+    Client = None
 
 class RSSManager:
     def __init__(self):
@@ -142,7 +147,9 @@ class RSSManager:
             # If Transmission settings are not configured, skip sending torrents
             tx_url = settings.get("transmission_url")
             tx_port = settings.get("transmission_port", GC.DEFAULT_TRANSMISSION_PORT)
-            if not tx_url:
+            if Client is None:
+                self.log(rss_id, "transmission-rpc is not installed in active Python environment; skipping send")
+            elif not tx_url:
                 self.log(rss_id, f"Transmission not configured, skipping sending torrents")
             else:
                 try:
@@ -222,4 +229,3 @@ class RSSManager:
     def start_all(self):
         for rss_id in self.storage["rss"].keys():
             self.start_task(rss_id)
-

@@ -212,3 +212,7 @@ storage/*.log
 storage/logs/*
 !storage/.gitkeep
 !storage/logs/.gitkeep
+
+# macOS metadata
+.DS_Store
+**/.DS_Store

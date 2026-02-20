@@ -1,5 +1,12 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel
 from typing import Optional
+
+try:
+    # Pydantic v2
+    from pydantic import field_validator
+except ImportError:
+    # Pydantic v1 fallback
+    from pydantic import validator as field_validator
 
 class RSSItem(BaseModel):
     id: str
@@ -28,4 +35,3 @@ class Settings(BaseModel):
         if v > 1440:  # 24 hours
             raise ValueError("Default RSS interval cannot exceed 1440 minutes (24 hours)")
         return v
-
