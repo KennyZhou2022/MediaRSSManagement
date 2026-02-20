@@ -2,6 +2,7 @@ import feedparser
 import threading
 import json
 import os
+import time
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from src.general.general_class import RSSItem
@@ -24,13 +25,49 @@ class RSSManager:
     # ---------------------
     # Storage
     # ---------------------
-    def load_storage(self):
+    @staticmethod
+    def _default_storage():
+        return {"rss": {}, "settings": {}}
+
+    @staticmethod
+    def _normalize_storage(raw_storage):
+        if not isinstance(raw_storage, dict):
+            raise ValueError("storage root must be a JSON object")
+        rss = raw_storage.get("rss", {})
+        settings = raw_storage.get("settings", {})
+        if not isinstance(rss, dict):
+            raise ValueError("storage.rss must be an object")
+        if not isinstance(settings, dict):
+            raise ValueError("storage.settings must be an object")
+        return {"rss": rss, "settings": settings}
+
+    @staticmethod
+    def _backup_broken_storage():
         if not os.path.exists(GC.STORAGE_PATH):
-            self.storage = {"rss": {}, "settings": {}}
+            return
+        backup_path = f"{GC.STORAGE_PATH}.broken-{int(time.time())}"
+        try:
+            os.replace(GC.STORAGE_PATH, backup_path)
+            print(f"[storage] Invalid storage detected. Backed up to: {backup_path}")
+        except OSError as exc:
+            print(f"[storage] Failed to backup invalid storage file: {exc}")
+
+    def load_storage(self):
+        default_storage = self._default_storage()
+        if not os.path.exists(GC.STORAGE_PATH):
+            self.storage = default_storage
             self.save_storage()
-        else:
+            return
+
+        try:
             with open(GC.STORAGE_PATH, "r", encoding="utf-8") as f:
-                self.storage = json.load(f)
+                raw_storage = json.load(f)
+            self.storage = self._normalize_storage(raw_storage)
+        except (json.JSONDecodeError, OSError, ValueError) as exc:
+            print(f"[storage] Failed to load storage file, resetting to defaults: {exc}")
+            self._backup_broken_storage()
+            self.storage = default_storage
+            self.save_storage()
 
     def save_storage(self):
         with open(GC.STORAGE_PATH, "w", encoding="utf-8") as f:
