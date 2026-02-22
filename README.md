@@ -37,6 +37,12 @@ Then open `http://localhost:8000/`.
 - Settings are stored in `storage/storage.json`.
 - Logs are stored in `storage/logs/`.
 
+## Version Tracking
+- Repository version source: `VERSION`.
+- Backend version output: root endpoint `GET /` and OpenAPI metadata.
+- Web page version display: header badge (`v<version>`) from `/api/constants.js`.
+- Release process: bump the value in `VERSION` before tagging/releasing.
+
 ## API (Core)
 - `GET /api/feeds`
 - `POST /api/feeds`

@@ -1,5 +1,17 @@
 import os
 
+
+def _load_app_version():
+    version_file = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "..", "VERSION")
+    )
+    try:
+        with open(version_file, "r", encoding="utf-8") as f:
+            version = f.read().strip()
+            return version or "0.0.0"
+    except OSError:
+        return "0.0.0"
+
 # Storage
 STORAGE_DIR = "storage"
 STORAGE_PATH = os.path.join(STORAGE_DIR, "storage.json")
@@ -11,6 +23,7 @@ DEFAULT_TRANSMISSION_PORT = 9091
 
 # Application defaults
 DEFAULT_RSS_INTERVAL = 10
+APP_VERSION = _load_app_version()
 
 # PT site names
 HHCLUB = 'HHCLUB'

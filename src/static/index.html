@@ -15,7 +15,7 @@
     <script src="/api/constants.js"></script>
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
-        const GC = window.GENERAL_CONSTANTS || { DEFAULTS: {}, STRINGS: {} };
+        const GC = window.GENERAL_CONSTANTS || { APP: {}, DEFAULTS: {}, STRINGS: {} };
 
         function RssTransmissionManager() {
             const [feeds, setFeeds] = useState([]);
@@ -23,6 +23,7 @@
             const [showForm, setShowForm] = useState(false);
             const [showSettings, setShowSettings] = useState(false);
             const [editing, setEditing] = useState(null);
+            const [appVersion, setAppVersion] = useState(GC.APP?.VERSION || '0.0.0');
             const [form, setForm] = useState({ name: '', url: '', pt_site: (GC.LISTS?.PT_SITES?.[0]) || '', key_words: '', path: '', set_default_download: false, interval: GC.DEFAULTS.DEFAULT_RSS_INTERVAL || 10 });
             const [settings, setSettings] = useState({ 
                 transmission_url: GC.DEFAULTS.TRANSMISSION_URL || '', 
@@ -39,12 +40,33 @@
 
             useEffect(() => { 
                 // set page title from constants
-                document.title = GC.STRINGS.TITLE || document.title;
+                const title = GC.STRINGS.TITLE || document.title;
+                const version = GC.APP?.VERSION || appVersion;
+                document.title = version ? `${title} v${version}` : title;
                 fetchFeeds(); 
                 fetchSettings();
+                fetchVersion();
                 startPollingStatus(); 
                 return stopPollingStatus; 
             }, []);
+
+            async function fetchVersion(){
+                try{
+                    const res = await fetch('/api/version', {
+                        cache: 'no-cache',
+                        headers: {'Cache-Control': 'no-cache'}
+                    });
+                    if(!res.ok) throw new Error(await res.text());
+                    const data = await res.json();
+                    if(data?.version){
+                        setAppVersion(data.version);
+                        const title = GC.STRINGS.TITLE || document.title;
+                        document.title = `${title} v${data.version}`;
+                    }
+                }catch(e){
+                    console.error('Failed to fetch app version', e);
+                }
+            }
 
             function startPollingStatus(){
                 pollRef.current = setInterval(()=>{
@@ -159,7 +181,12 @@
             return (
                 <div className="p-6 max-w-6xl mx-auto">
                     <div className="flex items-center justify-between mb-6">
-                        <h1 className="text-2xl font-bold">{GC.STRINGS.TITLE}</h1>
+                        <div className="flex items-center gap-3">
+                            <h1 className="text-2xl font-bold">{GC.STRINGS.TITLE}</h1>
+                            <span className="text-xs px-2 py-1 rounded bg-slate-100 text-slate-600">
+                                v{appVersion}
+                            </span>
+                        </div>
                         <div className="flex gap-2">
                             <button onClick={()=>setShowSettings(true)} className="px-3 py-1 border rounded">{GC.STRINGS.SETTINGS}</button>
                             <button onClick={openNew} className="px-3 py-1 bg-sky-600 text-white rounded shadow">{GC.STRINGS.ADD_FEED}</button>
