@@ -1,4 +1,4 @@
-# Media Management
+# Media RSS Management
 
 RSS-to-Transmission manager with a lightweight web UI. Configure RSS feeds, set polling intervals, and push new items to Transmission.
 
@@ -23,9 +23,9 @@ pip install -r requirements.txt
 
 ## Run (Local)
 ```bash
-python app.py
+python -m uvicorn app:app --reload --host 127.0.0.1 --port 8000
 ```
-Then open `http://localhost:8000/`.
+Then open `http://127.0.0.1:8000/`.
 
 ## Docker
 ```bash
@@ -40,7 +40,7 @@ Then open `http://localhost:8000/`.
 ## Version Tracking
 - Repository version source: `VERSION`.
 - Backend version output: root endpoint `GET /` and OpenAPI metadata.
-- Web page version display: header badge (`v<version>`) from `/api/constants.js`.
+- Web page version display: header badge (`v<version>`) from `/api/version` (with constants fallback).
 - Release process: bump the value in `VERSION` before tagging/releasing.
 
 ## API (Core)
@@ -52,10 +52,12 @@ Then open `http://localhost:8000/`.
 - `GET /api/feeds/{id}/logs`
 - `GET /api/settings`
 - `POST /api/settings`
+- `GET /api/version`
 
 ## Notes
 - The UI is served from `src/static/index.html`.
 - If Transmission is not configured, checks still run and logs are written, but no torrents are sent.
+- If `storage/storage.json` is missing or invalid JSON, the app auto-recovers with defaults and backs up invalid files.
 
 ## Software Structure
 - `app.py`: FastAPI app bootstrap, middleware, routing, and static UI mount.
