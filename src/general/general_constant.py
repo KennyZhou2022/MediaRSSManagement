@@ -2,15 +2,25 @@ import os
 
 
 def _load_app_version():
-    version_file = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", "..", "VERSION")
-    )
-    try:
-        with open(version_file, "r", encoding="utf-8") as f:
-            version = f.read().strip()
-            return version or "0.0.0"
-    except OSError:
-        return "0.0.0"
+    env_version = os.getenv("APP_VERSION", "").strip()
+    if env_version:
+        return env_version
+
+    candidates = [
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "VERSION")),
+        "/VERSION",
+        "/app/VERSION",
+        os.path.abspath("VERSION"),
+    ]
+    for version_file in candidates:
+        try:
+            with open(version_file, "r", encoding="utf-8") as f:
+                version = f.read().strip()
+                if version:
+                    return version
+        except OSError:
+            continue
+    return "0.0.0"
 
 # Storage
 STORAGE_DIR = "storage"
