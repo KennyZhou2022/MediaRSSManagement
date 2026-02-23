@@ -16,7 +16,9 @@ def constants_js():
             'TRANSMISSION_URL': getattr(GC, 'DEFAULT_TRANSMISSION_URL', 'localhost'),
             'TRANSMISSION_PORT': getattr(GC, 'DEFAULT_TRANSMISSION_PORT', 9091),
             'DEFAULT_RSS_INTERVAL': getattr(GC, 'DEFAULT_RSS_INTERVAL', 10),
-            'AUTO_REFRESH_MS': getattr(GC, 'AUTO_REFRESH_MS', 15000)
+            'AUTO_REFRESH_MS': getattr(GC, 'AUTO_REFRESH_MS', 15000),
+            'UI_FONT_STORAGE_KEY': getattr(GC, 'UI_FONT_STORAGE_KEY', 'mm_font'),
+            'UI_DEFAULT_FONT_ID': getattr(GC, 'UI_DEFAULT_FONT_ID', 'space')
         },
         'STRINGS': getattr(GC, 'STRINGS', {}),
         'LISTS': getattr(GC, 'LISTS', {})

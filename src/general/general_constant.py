@@ -55,10 +55,12 @@ TIME_ZONE = "Asia/Shanghai"
 
 # Frontend / shared defaults
 AUTO_REFRESH_MS = 15000
+UI_FONT_STORAGE_KEY = "mm_font"
+UI_DEFAULT_FONT_ID = "space"
 
 # Frontend strings (kept here so backend and frontend share the same source)
 STRINGS = {
-	'TITLE': 'Media Management',
+	'TITLE': 'Media RSS Management',
 	'SETTINGS': 'Settings',
 	'ADD_FEED': 'Add Feed',
 	'REFRESH': 'Refresh',
@@ -104,5 +106,38 @@ STRINGS = {
 # Lists used by frontend
 LISTS = {
 	'PT_SITES': SUPPORTED_PT_SITES,
-    'PT_SITE_TYPES': PT_SITE_TYPES
+    'PT_SITE_TYPES': PT_SITE_TYPES,
+    'FONT_OPTIONS': [
+        {
+            'id': 'space',
+            'label': 'Space Grotesk',
+            'value': '"Space Grotesk", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif'
+        },
+        {
+            'id': 'manrope',
+            'label': 'Manrope',
+            'value': '"Manrope", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif'
+        },
+        {
+            'id': 'jakarta',
+            'label': 'Plus Jakarta Sans',
+            'value': '"Plus Jakarta Sans", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif'
+        },
+        {
+            'id': 'ibm',
+            'label': 'IBM Plex Sans',
+            'value': '"IBM Plex Sans", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif'
+        },
+        {
+            'id': 'sora',
+            'label': 'Sora',
+            'value': '"Sora", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif'
+        }
+    ],
+    'PT_SITE_TAG_COLORS': {
+        'hhclub': 'border-blue-300 bg-blue-100 text-blue-800',
+        'audiences': 'border-amber-300 bg-amber-100 text-amber-800',
+        'chdbits': 'border-emerald-300 bg-emerald-100 text-emerald-800',
+        'default': 'border-slate-300 bg-slate-100 text-slate-700'
+    }
 }
