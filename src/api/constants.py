@@ -9,15 +9,29 @@ router = APIRouter()
 def constants_js():
     # Build a safe payload for the frontend (do not expose secrets)
     payload = {
+        'APP': {
+            'VERSION': getattr(GC, 'APP_VERSION', '0.0.0')
+        },
         'DEFAULTS': {
             'TRANSMISSION_URL': getattr(GC, 'DEFAULT_TRANSMISSION_URL', 'localhost'),
             'TRANSMISSION_PORT': getattr(GC, 'DEFAULT_TRANSMISSION_PORT', 9091),
             'DEFAULT_RSS_INTERVAL': getattr(GC, 'DEFAULT_RSS_INTERVAL', 10),
-            'AUTO_REFRESH_MS': getattr(GC, 'AUTO_REFRESH_MS', 15000)
+            'AUTO_REFRESH_MS': getattr(GC, 'AUTO_REFRESH_MS', 15000),
+            'UI_FONT_STORAGE_KEY': getattr(GC, 'UI_FONT_STORAGE_KEY', 'mm_font'),
+            'UI_DEFAULT_FONT_ID': getattr(GC, 'UI_DEFAULT_FONT_ID', 'space')
         },
         'STRINGS': getattr(GC, 'STRINGS', {}),
         'LISTS': getattr(GC, 'LISTS', {})
     }
     # Serialize with ensure_ascii=False to keep Unicode readable in JS
     body = 'window.GENERAL_CONSTANTS = ' + json.dumps(payload, ensure_ascii=False) + ';'
-    return Response(content=body, media_type='application/javascript')
+    return Response(
+        content=body,
+        media_type='application/javascript',
+        headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"},
+    )
+
+
+@router.get('/version')
+def app_version():
+    return {"version": getattr(GC, 'APP_VERSION', '0.0.0')}

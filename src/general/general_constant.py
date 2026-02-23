@@ -1,5 +1,17 @@
 import os
 
+
+def _load_app_version():
+    version_file = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "..", "VERSION")
+    )
+    try:
+        with open(version_file, "r", encoding="utf-8") as f:
+            version = f.read().strip()
+            return version or "0.0.0"
+    except OSError:
+        return "0.0.0"
+
 # Storage
 STORAGE_DIR = "storage"
 STORAGE_PATH = os.path.join(STORAGE_DIR, "storage.json")
@@ -11,23 +23,26 @@ DEFAULT_TRANSMISSION_PORT = 9091
 
 # Application defaults
 DEFAULT_RSS_INTERVAL = 10
+APP_VERSION = _load_app_version()
 
 # PT site names
 HHCLUB = 'HHCLUB'
 AUDIENCES = 'Audiences'
+CHDBits = 'CHDBits'
 
 # Default PT site
 DEFAULT_PT_SITE = HHCLUB
 
 # Supported PT sites
-SUPPORTED_PT_SITES = [HHCLUB, AUDIENCES]
+SUPPORTED_PT_SITES = [HHCLUB, AUDIENCES, CHDBits]
 
 # PT site type definitions
 DIRECT = 'direct'
 FILTER = 'filter'
 PT_SITE_TYPES = {
     HHCLUB: DIRECT,        # fetch RSS and download directly
-    AUDIENCES: FILTER      # fetch RSS, then filter by keywords before downloading
+    AUDIENCES: FILTER,     # fetch RSS, then filter by keywords before downloading
+    CHDBits: DIRECT        # fetch RSS and download directly
 }
 
 # Date and time format used in RSS feeds
@@ -40,10 +55,12 @@ TIME_ZONE = "Asia/Shanghai"
 
 # Frontend / shared defaults
 AUTO_REFRESH_MS = 15000
+UI_FONT_STORAGE_KEY = "mm_font"
+UI_DEFAULT_FONT_ID = "space"
 
 # Frontend strings (kept here so backend and frontend share the same source)
 STRINGS = {
-	'TITLE': 'Media Management',
+	'TITLE': 'Media RSS Management',
 	'SETTINGS': 'Settings',
 	'ADD_FEED': 'Add Feed',
 	'REFRESH': 'Refresh',
@@ -51,12 +68,10 @@ STRINGS = {
 	'AUTO_REFRESH_MSG': 'Auto-refresh every 15s',
 	'LOADING': 'Loading...',
 	'NO_FEEDS': 'No feeds added yet.',
-	'RECENT_ACTIVITY_HEADER': 'Recent Activity',
 	'NAME_LABEL': 'Name',
 	'RSS_URL_LABEL': 'RSS URL',
 	'PATH_LABEL': 'Download Path',
 	'INTERVAL_LABEL': 'Interval (minutes)',
-	'ENABLED_LABEL': 'Enabled',
 	'SAVE_BUTTON': 'Save',
 	'CANCEL_BUTTON': 'Cancel',
 	'TRANSMISSION_RPC_LABEL': 'Transmission RPC URL',
@@ -85,13 +100,44 @@ STRINGS = {
 	'CONFIRM_DELETE': 'Delete this feed?',
 	'CHECK_DONE': 'Check done, new items',
 	'CHECK_FAILED': 'Check failed',
-	'LOAD_LOGS_FAILED': 'Load logs failed',
-	'SENT_TO_TRANSMISSION': 'Sent to Transmission',
-	'SEND_FAILED': 'Send failed'
+	'LOAD_LOGS_FAILED': 'Load logs failed'
 }
 
 # Lists used by frontend
 LISTS = {
 	'PT_SITES': SUPPORTED_PT_SITES,
-    'PT_SITE_TYPES': PT_SITE_TYPES
+    'PT_SITE_TYPES': PT_SITE_TYPES,
+    'FONT_OPTIONS': [
+        {
+            'id': 'space',
+            'label': 'Space Grotesk',
+            'value': '"Space Grotesk", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif'
+        },
+        {
+            'id': 'manrope',
+            'label': 'Manrope',
+            'value': '"Manrope", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif'
+        },
+        {
+            'id': 'jakarta',
+            'label': 'Plus Jakarta Sans',
+            'value': '"Plus Jakarta Sans", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif'
+        },
+        {
+            'id': 'ibm',
+            'label': 'IBM Plex Sans',
+            'value': '"IBM Plex Sans", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif'
+        },
+        {
+            'id': 'sora',
+            'label': 'Sora',
+            'value': '"Sora", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif'
+        }
+    ],
+    'PT_SITE_TAG_COLORS': {
+        'hhclub': 'border-blue-300 bg-blue-100 text-blue-800',
+        'audiences': 'border-amber-300 bg-amber-100 text-amber-800',
+        'chdbits': 'border-emerald-300 bg-emerald-100 text-emerald-800',
+        'default': 'border-slate-300 bg-slate-100 text-slate-700'
+    }
 }

@@ -2,11 +2,17 @@ import feedparser
 import threading
 import json
 import os
+import time
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from src.general.general_class import RSSItem
-from transmission_rpc import Client
 import src.general.general_constant as GC
+
+try:
+    from transmission_rpc import Client
+except ImportError:
+    # Keep app startup working even if transmission-rpc is missing
+    Client = None
 
 class RSSManager:
     def __init__(self):
@@ -19,13 +25,49 @@ class RSSManager:
     # ---------------------
     # Storage
     # ---------------------
-    def load_storage(self):
+    @staticmethod
+    def _default_storage():
+        return {"rss": {}, "settings": {}}
+
+    @staticmethod
+    def _normalize_storage(raw_storage):
+        if not isinstance(raw_storage, dict):
+            raise ValueError("storage root must be a JSON object")
+        rss = raw_storage.get("rss", {})
+        settings = raw_storage.get("settings", {})
+        if not isinstance(rss, dict):
+            raise ValueError("storage.rss must be an object")
+        if not isinstance(settings, dict):
+            raise ValueError("storage.settings must be an object")
+        return {"rss": rss, "settings": settings}
+
+    @staticmethod
+    def _backup_broken_storage():
         if not os.path.exists(GC.STORAGE_PATH):
-            self.storage = {"rss": {}, "settings": {}}
+            return
+        backup_path = f"{GC.STORAGE_PATH}.broken-{int(time.time())}"
+        try:
+            os.replace(GC.STORAGE_PATH, backup_path)
+            print(f"[storage] Invalid storage detected. Backed up to: {backup_path}")
+        except OSError as exc:
+            print(f"[storage] Failed to backup invalid storage file: {exc}")
+
+    def load_storage(self):
+        default_storage = self._default_storage()
+        if not os.path.exists(GC.STORAGE_PATH):
+            self.storage = default_storage
             self.save_storage()
-        else:
+            return
+
+        try:
             with open(GC.STORAGE_PATH, "r", encoding="utf-8") as f:
-                self.storage = json.load(f)
+                raw_storage = json.load(f)
+            self.storage = self._normalize_storage(raw_storage)
+        except (json.JSONDecodeError, OSError, ValueError) as exc:
+            print(f"[storage] Failed to load storage file, resetting to defaults: {exc}")
+            self._backup_broken_storage()
+            self.storage = default_storage
+            self.save_storage()
 
     def save_storage(self):
         with open(GC.STORAGE_PATH, "w", encoding="utf-8") as f:
@@ -81,17 +123,19 @@ class RSSManager:
                     return json.load(f)
 
             torrent_dict = load_torrent_list()
+            new_torrent_dict = {}
 
             number_of_new = 0
             for entry in feed.entries:
                 if entry.title not in torrent_dict:
                     torrent_dict[entry.title] = entry.links[1]['href']
+                    new_torrent_dict[entry.title] = entry.links[1]['href']
                     number_of_new += 1
             with open(os.path.join(GC.STORAGE_DIR, f"{rss_id}_torrents_list.json"), "w", encoding="utf-8") as f:
                 json.dump(torrent_dict, f, indent=4, ensure_ascii=False)
             self.log(rss_id, f"Saved {number_of_new} torrent links to {rss_id}_torrents_list.json")
 
-            return torrent_dict
+            return new_torrent_dict
 
 
         def parse_rss():
@@ -140,7 +184,9 @@ class RSSManager:
             # If Transmission settings are not configured, skip sending torrents
             tx_url = settings.get("transmission_url")
             tx_port = settings.get("transmission_port", GC.DEFAULT_TRANSMISSION_PORT)
-            if not tx_url:
+            if Client is None:
+                self.log(rss_id, "transmission-rpc is not installed in active Python environment; skipping send")
+            elif not tx_url:
                 self.log(rss_id, f"Transmission not configured, skipping sending torrents")
             else:
                 try:
@@ -186,8 +232,8 @@ class RSSManager:
             return
 
         if GC.PT_SITE_TYPES[item.pt_site] in [GC.FILTER]:
-            torrent_dict = save_torrent_list()
-            torrent_links = search_by_keywords(torrent_dict)
+            new_torrent_dict = save_torrent_list()
+            torrent_links = search_by_keywords(new_torrent_dict)
         else:
             torrent_links = parse_rss()
 
@@ -220,4 +266,3 @@ class RSSManager:
     def start_all(self):
         for rss_id in self.storage["rss"].keys():
             self.start_task(rss_id)
-

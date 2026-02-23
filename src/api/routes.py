@@ -36,7 +36,6 @@ def _convert_rss_to_feed(rss_id: str, rss_data: dict) -> dict:
         "key_words": rss_data.get("key_words", ""),
         "path": rss_data.get("path", ""),
         "interval": rss_data.get("interval", 10),
-        "enabled": True,  # Default to enabled
         "lastChecked": rss_data.get("last_fetch"),
         "lastStatus": "OK" if rss_data.get("last_fetch") else "Never"
     }
@@ -134,8 +133,8 @@ def add_feed(feed_data: dict, rss: RSSManager = Depends(get_rss_manager)):
         name=feed_data.get("name", ""),
         url=feed_url,
         pt_site=feed_data.get("pt_site", DEFAULT_PT_SITE),
-            path=feed_data.get("path", ""),
-            key_words=feed_data.get("key_words", ""),
+        path=feed_data.get("path", ""),
+        key_words=feed_data.get("key_words", ""),
         interval=feed_data.get("interval", default_interval)
     )
     
@@ -217,4 +216,3 @@ def send_to_transmission(feed_id: str, payload: dict, rss: RSSManager = Depends(
         raise HTTPException(status_code=404, detail="Feed not found")
     rss.check_rss(feed_id)
     return {"ok": True}
-

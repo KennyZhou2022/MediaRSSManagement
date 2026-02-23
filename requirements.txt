@@ -2,6 +2,6 @@ fastapi
 uvicorn
 feedparser
 requests
-pydantic
+pydantic>=2,<3
 transmission-rpc
 tzdata
