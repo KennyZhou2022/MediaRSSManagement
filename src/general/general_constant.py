@@ -22,6 +22,10 @@ def _load_app_version():
             continue
     return "0.0.0"
 
+
+def get_app_version():
+    return _load_app_version()
+
 # Storage
 STORAGE_DIR = "storage"
 STORAGE_PATH = os.path.join(STORAGE_DIR, "storage.json")
@@ -33,7 +37,7 @@ DEFAULT_TRANSMISSION_PORT = 9091
 
 # Application defaults
 DEFAULT_RSS_INTERVAL = 10
-APP_VERSION = _load_app_version()
+APP_VERSION = get_app_version()
 
 # PT site names
 HHCLUB = 'HHCLUB'

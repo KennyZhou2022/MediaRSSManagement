@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 from src.rss_manager import RSSManager
 from src.api.routes import router, set_rss_manager
 from src.api.constants import router as constants_router
-from src.general.general_constant import APP_VERSION
+from src.general.general_constant import APP_VERSION, get_app_version
 
 app = FastAPI(version=APP_VERSION)
 rss = RSSManager()
@@ -57,7 +57,7 @@ def root():
         return FileResponse(index_path, media_type="text/html")
     return {
         "message": "RSS to Transmission Manager API",
-        "version": APP_VERSION,
+        "version": get_app_version(),
         "docs": "/docs",
         "endpoints": {
             "rss": "/api/rss",
