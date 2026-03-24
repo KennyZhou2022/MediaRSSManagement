@@ -58,11 +58,19 @@ def split_str(s):
     ss = [sss for sss in s.split(';') if sss.strip()]
     return ss
 
+def find_str(key_words, title):
+    for key_word in key_words:
+
+        parts = key_word.split()
+
+        if all(part in title for part in parts):
+            print('Match!')
 
 if __name__ == "__main__":
     # rss_id = "c7a8e9fe-042e-4730-8dba-91a04bb7e8e9"
     # save_torrent_list(rss_id)
-    str_test = "测试 字符串;分割"
-    print(split_str(str_test))
-    str_test2 = ""
-    print(not str_test2)
+    str_test = "隐身的名字 DV;分割"
+    ss = split_str(str_test)
+    print(ss)
+    str_test2 = "Vanished Name S01E05 2026 2160p WEB-DL H265 DV DDP5.1-ADWeb[隐身的名字 第05集 | 类型：剧情 悬疑 | 主演：倪妮 闫妮 刘雅瑟 刘敏涛 保剑锋 *云视听极光*]"
+    find_str(ss, str_test2)

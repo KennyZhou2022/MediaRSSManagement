@@ -8,6 +8,12 @@ except ImportError:
     # Pydantic v1 fallback
     from pydantic import validator as field_validator
 
+
+def model_to_dict(model: BaseModel) -> dict:
+    if hasattr(model, "model_dump"):
+        return model.model_dump()
+    return model.dict()
+
 class RSSItem(BaseModel):
     id: str
     name: str
@@ -16,6 +22,8 @@ class RSSItem(BaseModel):
     interval: int  # minutes
     last_fetch: Optional[str] = None
     last_title: Optional[str] = None
+    last_status: Optional[str] = None
+    last_error: Optional[str] = None
     pt_site: str
     key_words: Optional[str] = None
 

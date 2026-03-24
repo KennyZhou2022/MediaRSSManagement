@@ -10,7 +10,7 @@ def constants_js():
     # Build a safe payload for the frontend (do not expose secrets)
     payload = {
         'APP': {
-            'VERSION': getattr(GC, 'APP_VERSION', '0.0.0')
+            'VERSION': GC.get_app_version()
         },
         'DEFAULTS': {
             'TRANSMISSION_URL': getattr(GC, 'DEFAULT_TRANSMISSION_URL', 'localhost'),
@@ -34,4 +34,4 @@ def constants_js():
 
 @router.get('/version')
 def app_version():
-    return {"version": getattr(GC, 'APP_VERSION', '0.0.0')}
+    return {"version": GC.get_app_version()}
