@@ -3,7 +3,7 @@ API routes
 """
 from fastapi import APIRouter, HTTPException, Depends
 import uuid
-from src.general.general_class import RSSItem, Settings
+from src.general.general_class import RSSItem, Settings, model_to_dict
 from src.general.general_constant import DEFAULT_TRANSMISSION_URL, DEFAULT_TRANSMISSION_PORT, DEFAULT_RSS_INTERVAL, DEFAULT_PT_SITE
 from src.rss_manager import RSSManager
 
@@ -37,7 +37,8 @@ def _convert_rss_to_feed(rss_id: str, rss_data: dict) -> dict:
         "path": rss_data.get("path", ""),
         "interval": rss_data.get("interval", 10),
         "lastChecked": rss_data.get("last_fetch"),
-        "lastStatus": "OK" if rss_data.get("last_fetch") else "Never"
+        "lastStatus": rss_data.get("last_status") or ("OK" if rss_data.get("last_fetch") else "Never"),
+        "lastError": rss_data.get("last_error"),
     }
 
 
@@ -95,7 +96,7 @@ def get_settings(rss: RSSManager = Depends(get_rss_manager)):
 @router.post("/settings")
 def set_settings(s: Settings, rss: RSSManager = Depends(get_rss_manager)):
     # Pydantic模型会自动验证设置
-    rss.storage["settings"] = s.dict()
+    rss.storage["settings"] = model_to_dict(s)
     rss.save_storage()
     return {"ok": True}
 
@@ -168,7 +169,9 @@ def update_feed(feed_id: str, feed_data: dict, rss: RSSManager = Depends(get_rss
         path=feed_data.get("path", existing.get("path", "")),
         interval=feed_data.get("interval", existing.get("interval", 10)),
         last_fetch=existing.get("last_fetch"),
-        last_hash=existing.get("last_hash")
+        last_title=existing.get("last_title"),
+        last_status=existing.get("last_status"),
+        last_error=existing.get("last_error"),
     )
     rss.add_rss(rss_item)
     return {"ok": True}

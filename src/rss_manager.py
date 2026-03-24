@@ -5,7 +5,7 @@ import os
 import time
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from src.general.general_class import RSSItem
+from src.general.general_class import RSSItem, model_to_dict
 import src.general.general_constant as GC
 
 try:
@@ -73,11 +73,48 @@ class RSSManager:
         with open(GC.STORAGE_PATH, "w", encoding="utf-8") as f:
             json.dump(self.storage, f, indent=4, ensure_ascii=False)
 
+    @staticmethod
+    def _now_str():
+        return datetime.now(ZoneInfo(GC.TIME_ZONE)).strftime(GC.DATETIME_FORMAT)
+
+    @staticmethod
+    def _safe_error_message(exc: Exception) -> str:
+        return str(exc) or exc.__class__.__name__
+
+    @staticmethod
+    def _entry_title(entry, fallback: str) -> str:
+        return getattr(entry, "title", "") or fallback
+
+    @staticmethod
+    def _extract_torrent_link(entry):
+        links = getattr(entry, "links", []) or []
+        for link in links:
+            href = link.get("href")
+            rel = str(link.get("rel", "")).lower()
+            link_type = str(link.get("type", "")).lower()
+            if href and (rel == "enclosure" or "bittorrent" in link_type):
+                return href
+        for link in links:
+            href = link.get("href")
+            if href:
+                return href
+        return None
+
+    def _persist_item(self, item: RSSItem):
+        self.storage["rss"][item.id] = model_to_dict(item)
+        self.save_storage()
+
+    def _mark_feed_result(self, item: RSSItem, status: str, error: str = ""):
+        item.last_fetch = self._now_str()
+        item.last_status = status
+        item.last_error = error or None
+        self._persist_item(item)
+
     # ---------------------
     # RSS CRUD
     # ---------------------
     def add_rss(self, item: RSSItem):
-        self.storage["rss"][item.id] = item.dict()
+        self.storage["rss"][item.id] = model_to_dict(item)
         self.save_storage()
         self.start_task(item.id)
 
@@ -95,7 +132,7 @@ class RSSManager:
     # ---------------------
     def log(self, rss_id: str, text: str):
         # formatted timestamp using project constants
-        ts = datetime.now(ZoneInfo(GC.TIME_ZONE)).strftime(GC.DATETIME_FORMAT)
+        ts = self._now_str()
         log_path = os.path.join(GC.LOG_DIR, f"{rss_id}.log")
         with open(log_path, "a", encoding="utf-8") as f:
             f.write(f"[{ts}] {text}\n")
@@ -111,6 +148,8 @@ class RSSManager:
     # Main RSS check logic
     # ---------------------
     def check_rss(self, rss_id: str):
+        if rss_id not in self.storage["rss"]:
+            raise KeyError(f"RSS feed not found: {rss_id}")
 
         def save_torrent_list():
 
@@ -119,17 +158,27 @@ class RSSManager:
                 if not os.path.exists(torrent_list_path):
                     self.log(rss_id, f"No torrent list file found: {torrent_list_path}")
                     return {}
-                with open(torrent_list_path, "r", encoding="utf-8") as f:
-                    return json.load(f)
+                try:
+                    with open(torrent_list_path, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                    return data if isinstance(data, dict) else {}
+                except (OSError, json.JSONDecodeError) as exc:
+                    self.log(rss_id, f"Failed to load torrent list file: {exc}")
+                    return {}
 
             torrent_dict = load_torrent_list()
             new_torrent_dict = {}
 
             number_of_new = 0
             for entry in feed.entries:
-                if entry.title not in torrent_dict:
-                    torrent_dict[entry.title] = entry.links[1]['href']
-                    new_torrent_dict[entry.title] = entry.links[1]['href']
+                title = self._entry_title(entry, f"entry-{len(torrent_dict) + number_of_new + 1}")
+                torrent_link = self._extract_torrent_link(entry)
+                if not torrent_link:
+                    self.log(rss_id, f"Skipped entry without usable torrent link: {title}")
+                    continue
+                if title not in torrent_dict:
+                    torrent_dict[title] = torrent_link
+                    new_torrent_dict[title] = torrent_link
                     number_of_new += 1
             with open(os.path.join(GC.STORAGE_DIR, f"{rss_id}_torrents_list.json"), "w", encoding="utf-8") as f:
                 json.dump(torrent_dict, f, indent=4, ensure_ascii=False)
@@ -142,14 +191,20 @@ class RSSManager:
 
             torrents_links = []
             number_of_new = 0
+            newest_title = self._entry_title(feed.entries[0], "")
 
-            if item.last_title != feed.entries[0].title:
+            if item.last_title != newest_title:
                 # RSS updated
                 self.log(rss_id, "New torrent detected")
 
                 for entry in feed.entries:
-                    if entry.title != item.last_title:
-                        torrents_links.append(entry.links[1]['href'])
+                    title = self._entry_title(entry, "")
+                    if title != item.last_title:
+                        torrent_link = self._extract_torrent_link(entry)
+                        if not torrent_link:
+                            self.log(rss_id, f"Skipped entry without usable torrent link: {title or 'unknown'}")
+                            continue
+                        torrents_links.append(torrent_link)
                         number_of_new += 1
 
                 self.log(rss_id, f"{number_of_new} new torrents found")
@@ -212,56 +267,88 @@ class RSSManager:
         item = RSSItem(**self.storage["rss"][rss_id])
         settings = self.storage.get("settings", {})
 
-        self.log(rss_id, "Fetching RSS...")
-        feed = feedparser.parse(item.url)
+        try:
+            self.log(rss_id, "Fetching RSS...")
+            feed = feedparser.parse(item.url)
 
-        # fetch failed
-        if feed.bozo:
-            self.log(rss_id, f"Fetch failed: {feed.bozo_exception}")
-            item.last_fetch = datetime.now(ZoneInfo(GC.TIME_ZONE)).strftime(GC.DATETIME_FORMAT)
-            self.storage["rss"][rss_id] = item.dict()
-            self.save_storage()
-            return
+            # fetch failed
+            if feed.bozo:
+                message = f"Fetch failed: {feed.bozo_exception}"
+                self.log(rss_id, message)
+                self._mark_feed_result(item, "ERROR", self._safe_error_message(feed.bozo_exception))
+                return
 
-        # Check if feed has entries
-        if not feed.entries or len(feed.entries) == 0:
-            self.log(rss_id, "RSS feed has no entries")
-            item.last_fetch = datetime.now(ZoneInfo(GC.TIME_ZONE)).strftime(GC.DATETIME_FORMAT)
-            self.storage["rss"][rss_id] = item.dict()
-            self.save_storage()
-            return
+            # Check if feed has entries
+            if not feed.entries or len(feed.entries) == 0:
+                message = "RSS feed has no entries"
+                self.log(rss_id, message)
+                self._mark_feed_result(item, "EMPTY", message)
+                return
 
-        if GC.PT_SITE_TYPES[item.pt_site] in [GC.FILTER]:
-            new_torrent_dict = save_torrent_list()
-            torrent_links = search_by_keywords(new_torrent_dict)
-        else:
-            torrent_links = parse_rss()
+            pt_site_type = GC.PT_SITE_TYPES.get(item.pt_site, GC.DIRECT)
+            if item.pt_site not in GC.PT_SITE_TYPES:
+                self.log(rss_id, f"Unknown PT site '{item.pt_site}', fallback to direct mode")
 
-        send_links_to_transmission(torrent_links, new_title=feed.entries[0].title)
+            if pt_site_type == GC.FILTER:
+                new_torrent_dict = save_torrent_list()
+                torrent_links = search_by_keywords(new_torrent_dict)
+            else:
+                torrent_links = parse_rss()
 
-        item.last_fetch = datetime.now(ZoneInfo(GC.TIME_ZONE)).strftime(GC.DATETIME_FORMAT)
-        self.storage["rss"][rss_id] = item.dict()
-        self.save_storage()
+            new_title = self._entry_title(feed.entries[0], item.last_title or "")
+            send_links_to_transmission(torrent_links, new_title=new_title)
+
+            item.last_status = "OK"
+            item.last_error = None
+            item.last_fetch = self._now_str()
+            self._persist_item(item)
+        except Exception as exc:
+            error_message = self._safe_error_message(exc)
+            self.log(rss_id, f"Check failed unexpectedly: {error_message}")
+            self._mark_feed_result(item, "ERROR", error_message)
+            raise
 
 
     # ---------------------
     # Scheduled polling
     # ---------------------
+    def _schedule_next_run(self, rss_id: str):
+        rss_data = self.storage["rss"].get(rss_id)
+        if not rss_data:
+            self.tasks.pop(rss_id, None)
+            return
+
+        interval = rss_data.get("interval", GC.DEFAULT_RSS_INTERVAL)
+        try:
+            interval_seconds = max(int(interval), 1) * 60
+        except (TypeError, ValueError):
+            interval_seconds = GC.DEFAULT_RSS_INTERVAL * 60
+
+        timer = threading.Timer(interval_seconds, self.schedule, args=[rss_id])
+        timer.daemon = True
+        self.tasks[rss_id] = timer
+        timer.start()
+
     def schedule(self, rss_id: str):
-        self.check_rss(rss_id)
-        interval = self.storage["rss"][rss_id]["interval"]
-        self.tasks[rss_id] = threading.Timer(interval * 60, self.schedule, args=[rss_id])
-        self.tasks[rss_id].start()
+        try:
+            self.check_rss(rss_id)
+        except Exception:
+            # Keep the scheduling chain alive even when a single run fails.
+            pass
+        finally:
+            if rss_id in self.storage["rss"]:
+                self._schedule_next_run(rss_id)
 
     def start_task(self, rss_id: str):
         if rss_id in self.tasks:
             self.tasks[rss_id].cancel()
         try:
-            self.schedule(rss_id)
+            self.check_rss(rss_id)
+            self._schedule_next_run(rss_id)
         except Exception as e:
             # if scheduling fails, log the error
             self.log(rss_id, f"Failed to start task: {str(e)}")
-            raise
+            self._schedule_next_run(rss_id)
 
     def start_all(self):
         for rss_id in self.storage["rss"].keys():
