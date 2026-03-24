@@ -5,6 +5,7 @@ RSS-to-Transmission manager with a lightweight web UI. Configure RSS feeds, set 
 ## Features
 - Feed lifecycle management: create, edit, delete RSS feeds with name, URL, PT site, keywords, and download path.
 - Polling controls: per-feed interval scheduling plus manual “check now” trigger.
+- Resilient scheduler: a single feed check failure no longer stops future polling for that feed.
 - Keyword filtering for supported PT sites: filter torrent entries before sending.
 - Transmission integration: configure RPC host/port/credentials and send torrents to the specified download path.
 - Auto-refreshing UI: periodic refresh to show latest feed status and last check time.
@@ -58,6 +59,7 @@ Then open `http://localhost:8000/`.
 - The UI is served from `src/static/index.html`.
 - If Transmission is not configured, checks still run and logs are written, but no torrents are sent.
 - If `storage/storage.json` is missing or invalid JSON, the app auto-recovers with defaults and backs up invalid files.
+- Feed parsing and filter-cache loading now tolerate malformed RSS data and broken local cache files more gracefully.
 
 ## Software Structure
 - `app.py`: FastAPI app bootstrap, middleware, routing, and static UI mount.
