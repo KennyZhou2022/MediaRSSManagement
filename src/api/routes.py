@@ -66,7 +66,12 @@ def delete_rss(rss_id: str, rss: RSSManager = Depends(get_rss_manager)):
 
 @router.post("/rss/{rss_id}/check")
 def manual_check(rss_id: str, rss: RSSManager = Depends(get_rss_manager)):
-    rss.check_rss(rss_id)
+    try:
+        rss.run_check_now(rss_id, trigger="manual")
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Feed not found")
+    except RuntimeError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
     return {"ok": True}
 
 
@@ -189,7 +194,10 @@ def delete_feed(feed_id: str, rss: RSSManager = Depends(get_rss_manager)):
 def check_feed(feed_id: str, rss: RSSManager = Depends(get_rss_manager)):
     if feed_id not in rss.storage["rss"]:
         raise HTTPException(status_code=404, detail="Feed not found")
-    rss.check_rss(feed_id)
+    try:
+        rss.run_check_now(feed_id, trigger="manual")
+    except RuntimeError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
     return {"ok": True, "newItems": []}  # TODO: Return actual new items count
 
 
@@ -217,5 +225,8 @@ def send_to_transmission(feed_id: str, payload: dict, rss: RSSManager = Depends(
     # For now, we'll trigger a check which will send new items automatically
     if feed_id not in rss.storage["rss"]:
         raise HTTPException(status_code=404, detail="Feed not found")
-    rss.check_rss(feed_id)
+    try:
+        rss.run_check_now(feed_id, trigger="manual-send")
+    except RuntimeError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
     return {"ok": True}

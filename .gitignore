@@ -216,3 +216,6 @@ storage/logs/*
 # macOS metadata
 .DS_Store
 **/.DS_Store
+
+# agent skills
+.agent

@@ -1,5 +1,6 @@
 import json
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -8,6 +9,15 @@ from unittest.mock import patch
 import src.general.general_constant as GC
 from src.general.general_class import RSSItem, model_to_dict
 from src.rss_manager import RSSManager
+
+
+class FakeResponse:
+    def __init__(self, content: bytes = b"", status_code: int = 200):
+        self.content = content
+        self.status_code = status_code
+
+    def raise_for_status(self):
+        return None
 
 
 class RSSManagerRobustnessTests(unittest.TestCase):
@@ -51,14 +61,37 @@ class RSSManagerRobustnessTests(unittest.TestCase):
         self.manager.save_storage()
         return item
 
-    def test_schedule_reschedules_after_check_exception(self):
+    def test_schedule_arms_next_run_and_dispatches_worker(self):
         self._add_item()
 
-        with patch.object(self.manager, "check_rss", side_effect=RuntimeError("boom")):
-            with patch.object(self.manager, "_schedule_next_run") as mock_schedule_next:
+        with patch.object(self.manager, "_schedule_next_run") as mock_schedule_next:
+            with patch.object(self.manager, "_start_check_thread") as mock_start_worker:
                 self.manager.schedule("feed-1")
 
-        mock_schedule_next.assert_called_once_with("feed-1")
+        mock_schedule_next.assert_called_once_with("feed-1", source="timer")
+        mock_start_worker.assert_called_once_with("feed-1", "timer")
+
+    def test_run_check_now_rejects_overlap(self):
+        item = self._add_item()
+        run_lock = self.manager._get_run_lock(item.id)
+        run_lock.acquire()
+        self.manager._set_active_run(
+            item.id,
+            {
+                "run_id": "active123",
+                "trigger": "timer",
+                "started_at": "now",
+                "started_monotonic": time.monotonic() - 5,
+                "thread_name": "rss-check-feed-1",
+            },
+        )
+
+        try:
+            with self.assertRaises(RuntimeError):
+                self.manager.run_check_now(item.id)
+        finally:
+            self.manager._clear_active_run(item.id)
+            run_lock.release()
 
     def test_check_rss_tolerates_missing_torrent_link(self):
         item = self._add_item()
@@ -67,8 +100,8 @@ class RSSManagerRobustnessTests(unittest.TestCase):
             entries=[SimpleNamespace(title="Episode 1", links=[{"rel": "alternate"}])],
         )
 
-        with patch("src.rss_manager.feedparser.parse", return_value=feed):
-            self.manager.check_rss(item.id)
+        with patch.object(self.manager, "_fetch_feed", return_value=feed):
+            self.manager.check_rss(item.id, run_id="testrun")
 
         saved = self.manager.storage["rss"][item.id]
         self.assertEqual(saved["last_status"], "OK")
@@ -91,14 +124,28 @@ class RSSManagerRobustnessTests(unittest.TestCase):
             ],
         )
 
-        with patch("src.rss_manager.feedparser.parse", return_value=feed):
-            self.manager.check_rss(item.id)
+        with patch.object(self.manager, "_fetch_feed", return_value=feed):
+            self.manager.check_rss(item.id, run_id="testrun")
 
         saved = self.manager.storage["rss"][item.id]
         self.assertEqual(saved["last_status"], "OK")
         self.assertTrue(broken_cache.exists())
         cache_data = json.loads(broken_cache.read_text(encoding="utf-8"))
         self.assertIn("Episode 1", cache_data)
+
+    def test_fetch_feed_uses_explicit_request_timeouts(self):
+        item = self._add_item()
+        response = FakeResponse(content=b"<rss><channel></channel></rss>", status_code=200)
+
+        with patch("src.rss_manager.requests.get", return_value=response) as mock_get:
+            with patch("src.rss_manager.feedparser.parse", return_value=SimpleNamespace(entries=[], bozo=False)):
+                self.manager._fetch_feed(item.id, item, "testrun")
+
+        mock_get.assert_called_once_with(
+            item.url,
+            timeout=(GC.RSS_REQUEST_CONNECT_TIMEOUT, GC.RSS_REQUEST_READ_TIMEOUT),
+            headers={"User-Agent": "MediaRSSManagement/1.1"},
+        )
 
 
 if __name__ == "__main__":
